@@ -1,0 +1,32 @@
+{
+    "Answers": [
+        {
+            "Name": "BASIC_TIME"
+        },
+        {
+            "Name": "MAKE_APPOINTMENT_ASK_TIME",
+            "Unlock": "ASK_TIME"
+        },
+        {
+            "Name": "MAKE_APPOINTMENT_ASK_NAME"
+        },
+        {
+            "Name": "MADE_APPOINTMENT"
+        }
+    ],
+    "Questions": [
+        {
+            "Name": "BASIC_TIME",
+        },
+        {
+            "Name": "MAKE_APPOINTMENT",
+        },
+        {
+            "Name": "ASK_TIME",
+            "Locked": true
+        },
+        {
+            "Name": "TEST"
+        }
+    ]
+}

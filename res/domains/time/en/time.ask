@@ -1,0 +1,27 @@
+BASIC_TIME:
+    evaluator{
+        [#QUESTION_PREFIX#] . ["is"] . ["the"] . "time" . ["is"] . ["in" . $REGION$]
+    }
+    analyzer{
+        Console.WriteLine("HI");
+        return "";
+    }
+
+MAKE_APPOINTMENT:
+    evaluator{
+        ("appointment" | "meeting" | "arrangement") . [
+            (
+                [("with" | "named" | "called") . $NAME$] . ["at" . $POINT_IN_TIME$]   
+            ) | (
+                ["at" . $POINT_IN_TIME$] . [("with" | "named" | "called") . $NAME$]
+            )
+        ]
+    }
+
+TEST:
+    evaluator{
+        $NUMBER=COMMON_NUMBER_ALL()$
+    }
+    analyzer{
+        return variables["NUMBER"];
+    }

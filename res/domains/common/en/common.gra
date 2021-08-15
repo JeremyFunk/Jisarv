@@ -1,0 +1,715 @@
+﻿QUESTION_PREFIX:
+	evaluator{
+		["Would" | "Could" | "Might" | "Can" | "May"] . ["you"] . ["tell" | "say" | "inform"] . ["me" | "us" | "them" | "him" | "her" | "it"] . ["on"] . ["what" | "who" | "where"]
+	}
+
+CREATE_QUESTION_PREFIX:
+	evaluator{
+		["Would" | "Could" | "Might" | "Can" | "May"] . ["you"] . ["make" | "create" | "do" | "set"] . ["me" | "us" | "them" | "him" | "her" | "it"] . ["a" | "an" | "the"]
+	}
+
+
+
+DATE:
+	evaluator{
+		$DATE=COMMON_NUMBER_1_99_ALL()$
+		.
+		[
+			("January" . $MONTH=1$) |
+			("February" . $MONTH=2$) |
+			("March" . $MONTH=3$) |
+			("April" . $MONTH=4$) |
+			("May" . $MONTH=5$) |
+			("June" . $MONTH=6$) |
+			("July" . $MONTH=7$) |
+			("August" . $MONTH=8$) |
+			("September" . $MONTH=9$) |
+			("October" . $MONTH=10$) |
+			("November" . $MONTH=11$) |
+			("December" . $MONTH=12$) |
+		]
+		.
+		[
+			$YEAR=COMMON_NUMBER_ALL()$
+		]
+	}
+	analyzer{
+		$DATE=COMMON_NUMBER_1_99_ALL()$
+		.
+		[
+			(
+				"PM" . $PM=1$
+			)
+			|
+			(
+				"AM" . $AM=1$
+			)
+		]
+	}
+
+TIME:
+	evaluator{
+		
+	}
+	
+
+POINT_IN_TIME:
+	evaluator{
+		[$DATE = DATE()$]
+		.
+
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+COMMON_NUMBER_1_9:
+	evaluator{
+		(
+			("One" . $NUMBER=1$) |
+			("Two" . $NUMBER=2$) |
+			("Three" . $NUMBER=3$) |
+			("Four" . $NUMBER=4$) |
+			("Five" . $NUMBER=5$) |
+			("Six" . $NUMBER=6$) |
+			("Seven" . $NUMBER=7$) |
+			("Eight" . $NUMBER=8$) |
+			("Nine" . $NUMBER=9$)
+		)
+	}
+	analyzer{
+		return variables["NUMBER"];
+	}
+	
+COMMON_NUMBER_10_19:
+	evaluator{
+		(
+			("Ten" . $NUMBER=10$) |
+			("Eleven" . $NUMBER=11$) |
+			("Twelve" . $NUMBER=12$) |
+			("Thirteen" . $NUMBER=13$) |
+			("Fourteen" . $NUMBER=14$) |
+			("Fifteen" . $NUMBER=15$) |
+			("Sixteen" . $NUMBER=16$) |
+			("Seventeen" . $NUMBER=17$) |
+			("Eighteen" . $NUMBER=18$) |
+			("Nineteen" . $NUMBER=19$)
+		)
+	}
+	analyzer{
+		return variables["NUMBER"];
+	}
+	
+COMMON_NUMBER_20_90:
+	evaluator{
+		(
+			("Twenty" . $NUMBER=20$) |
+			("Thirty" . $NUMBER=30$) |
+			("Forty" . $NUMBER=40$) |
+			("Fifty" . $NUMBER=50$) |
+			("Sixty" . $NUMBER=60$) |
+			("Seventy" . $NUMBER=70$) |
+			("Eighty" . $NUMBER=80$) |
+			("Ninety" . $NUMBER=90$)
+		)
+		.
+		[$NUMBER2=COMMON_NUMBER_1_9()$]
+	}
+	analyzer{
+		if(variables.ContainsKey("NUMBER2")){
+			return (int.Parse(variables["NUMBER"]) + int.Parse(variables["NUMBER2"])) + "";
+		}
+		return variables["NUMBER"];
+	}
+	
+	
+COMMON_NUMBER_1_99:
+	evaluator{
+		(
+			($NUMBER=COMMON_NUMBER_1_9()$) |
+			($NUMBER=COMMON_NUMBER_10_19()$) |
+			($NUMBER=COMMON_NUMBER_20_90()$)
+		)
+	}
+	analyzer{
+		return variables["NUMBER"];
+	}
+	
+COMMON_NUMBER_1_999:
+	evaluator{
+		(
+			($NUMBER=COMMON_NUMBER_1_99()$)
+			|
+			(
+				[$NUMBER1=COMMON_NUMBER_1_9()$]
+				.
+				"hundred"
+				.
+				[$NUMBER2=COMMON_NUMBER_1_99()$]
+			)
+		)
+	}
+	analyzer{
+		if(variables.ContainsKey("NUMBER")){
+			return variables["NUMBER"];
+		}
+		
+		var number = 100;
+		if(variables.ContainsKey("NUMBER1")){
+			number = int.Parse(variables["NUMBER1"]) * 100;
+		}
+		if(variables.ContainsKey("NUMBER2")){
+			number += int.Parse(variables["NUMBER2"]);
+		}
+
+		return number + "";
+	}
+
+COMMON_NUMBER:
+	evaluator{
+		[$NUMBER=COMMON_NUMBER_1_999()$]
+		.
+		(
+			[
+				"million"
+				.
+				$MILLION=1$
+				.
+				[
+					[$NUMBER2=COMMON_NUMBER_1_999()$]
+					.
+					[
+						"thousand"
+						.
+						$THOUSAND=1$
+						.
+						[
+							$NUMBER3=COMMON_NUMBER_1_999()$
+						]
+					]
+				]
+			] | [
+				"thousand"
+				.
+				$THOUSAND=1$
+				.
+				[
+					$NUMBER3=COMMON_NUMBER_1_999()$
+				]
+			]
+		)
+	}
+	analyzer{
+		var fullNumber = 0;
+		var number = 1;
+		if(variables.ContainsKey("NUMBER")){
+			number = int.Parse(variables["NUMBER"]);
+		}
+
+		if(variables.ContainsKey("MILLION")){
+			fullNumber += number * 1_000_000;
+
+			var number2 = 1;
+			
+			if(variables.ContainsKey("NUMBER2")){
+				number2 = int.Parse(variables["NUMBER2"]);
+			}
+
+			if(variables.ContainsKey("THOUSAND")){
+				fullNumber += number2 * 1_000;
+
+				if(variables.ContainsKey("NUMBER3")){
+					fullNumber += int.Parse(variables["NUMBER3"]);
+				}
+			}
+		}
+		else if(variables.ContainsKey("THOUSAND")){
+			fullNumber = number * 1_000;
+
+			if(variables.ContainsKey("NUMBER3")){
+				fullNumber += int.Parse(variables["NUMBER3"]);
+			}
+		}else{
+			return number + "";
+		}
+
+		return fullNumber + "";
+	}
+
+
+
+
+
+
+
+
+
+COMMON_NUMBER_1_9_COUNT:
+	evaluator{
+		(
+			("First" . $NUMBER=1$) |
+			("Second" . $NUMBER=2$) |
+			("Third" . $NUMBER=3$) |
+			("Fourth" . $NUMBER=4$) |
+			("Fifth" . $NUMBER=5$) |
+			("Sixth" . $NUMBER=6$) |
+			("Seventh" . $NUMBER=7$) |
+			("Eighth" . $NUMBER=8$) |
+			("Ninth" . $NUMBER=9$)
+		)
+	}
+	analyzer{
+		return variables["NUMBER"];
+	}
+	
+COMMON_NUMBER_10_19_COUNT:
+	evaluator{
+		(
+			("Tenth" . $NUMBER=10$) |
+			("Eleventh" . $NUMBER=11$) |
+			("Twelfth" . $NUMBER=12$) |
+			("Thirteenth" . $NUMBER=13$) |
+			("Fourteenth" . $NUMBER=14$) |
+			("Fifteenth" . $NUMBER=15$) |
+			("Sixteenth" . $NUMBER=16$) |
+			("Seventeenth" . $NUMBER=17$) |
+			("Eighteenth" . $NUMBER=18$) |
+			("Nineteenth" . $NUMBER=19$)
+		)
+	}
+	analyzer{
+		return variables["NUMBER"];
+	}
+
+	
+COMMON_NUMBER_20_90_COUNT:
+	evaluator{
+		(
+			(
+				("Twenty" . $NUMBER=20$) |
+				("Thirty" . $NUMBER=30$) |
+				("Forty" . $NUMBER=40$) |
+				("Fifty" . $NUMBER=50$) |
+				("Sixty" . $NUMBER=60$) |
+				("Seventy" . $NUMBER=70$) |
+				("Eighty" . $NUMBER=80$) |
+				("Ninety" . $NUMBER=90$)
+			)
+			.
+			[$NUMBER2=COMMON_NUMBER_1_9_COUNT()$]
+		)
+		|
+		(
+			("Twentieth" . $NUMBER=20$) | 
+			("Thirtieth" . $NUMBER=30$) | 
+			("Fortieth" . $NUMBER=40$) | 
+			("Fiftieth" . $NUMBER=50$) | 
+			("Sixtieth" . $NUMBER=60$) | 
+			("Seventieth" . $NUMBER=70$) | 
+			("Eightieth" . $NUMBER=80$) | 
+			("Ninetieth" . $NUMBER=90$)
+	}
+	analyzer{
+		if(variables.ContainsKey("NUMBER2")){
+			return (int.Parse(variables["NUMBER"]) + int.Parse(variables["NUMBER2"])) + "";
+		}
+		return variables["NUMBER"];
+	}
+
+
+	
+COMMON_NUMBER_1_99_COUNT:
+	evaluator{
+		(
+			$NUMBER=COMMON_NUMBER_1_9_COUNT()$ |
+			$NUMBER=COMMON_NUMBER_10_19_COUNT()$ |
+			$NUMBER=COMMON_NUMBER_20_90_COUNT()$
+		)
+	}
+	analyzer{
+		return variables["NUMBER"];
+	}
+
+	
+	
+COMMON_NUMBER_1_999_COUNT:
+	evaluator{
+		(
+			$NUMBER=COMMON_NUMBER_1_99_COUNT()$
+			|
+			(
+				[$NUMBER1=COMMON_NUMBER_1_9()$]
+				.
+				(
+					(	
+						"hundred"
+						.
+						$NUMBER2=COMMON_NUMBER_1_99_COUNT()$
+					)
+					|
+					"hundredth"
+				)
+			)
+		)
+	}
+	analyzer{
+		if(variables.ContainsKey("NUMBER")){
+			return variables["NUMBER"];
+		}
+		
+		var number = 100;
+		if(variables.ContainsKey("NUMBER1")){
+			number = int.Parse(variables["NUMBER1"]) * 100;
+		}
+		if(variables.ContainsKey("NUMBER2")){
+			number += int.Parse(variables["NUMBER2"]);
+		}
+
+		return number + "";
+	}
+
+COMMON_NUMBER_COUNT:
+	evaluator{
+		(
+			$NUMBER=COMMON_NUMBER_1_999_COUNT()$
+			|
+			(
+				[$NUMBER=COMMON_NUMBER_1_999()$]
+				.
+				(
+					(
+						(
+							"millionth"
+							.
+							$MILLION=1$
+						)
+						|
+						(
+							"million"
+							.
+							$MILLION=1$
+							.
+							(
+								(
+									$NUMBER2=COMMON_NUMBER_1_999_COUNT()$
+								)
+								|
+								(
+									[$NUMBER2=COMMON_NUMBER_1_999()$]
+									.
+									(
+										(
+											"thousandth"
+											.
+											$THOUSAND=1$
+										)
+										|
+										(
+											"thousand"
+											.
+											$THOUSAND=1$
+											.
+											$NUMBER3=COMMON_NUMBER_1_999_COUNT()$
+										)
+									)
+								)
+							)
+						)
+					) 
+					| 
+					(
+						(
+							"thousandth"
+							.
+							$THOUSAND=1$
+						)
+						|
+						(
+							"thousand"
+							.
+							$THOUSAND=1$
+							.
+							$NUMBER3=COMMON_NUMBER_1_999_COUNT()$
+						)
+					)
+				)
+			)
+		)
+		
+	}
+	analyzer{
+		var fullNumber = 0;
+		var number = 1;
+		if(variables.ContainsKey("NUMBER")){
+			number = int.Parse(variables["NUMBER"]);
+		}
+
+		if(variables.ContainsKey("MILLION")){
+			fullNumber += number * 1_000_000;
+
+			var number2 = 1;
+			
+			if(variables.ContainsKey("NUMBER2")){
+				number2 = int.Parse(variables["NUMBER2"]);
+			}
+
+			if(variables.ContainsKey("THOUSAND")){
+				fullNumber += number2 * 1_000;
+
+				if(variables.ContainsKey("NUMBER3")){
+					fullNumber += int.Parse(variables["NUMBER3"]);
+				}
+			}
+		}
+		else if(variables.ContainsKey("THOUSAND")){
+			fullNumber = number * 1_000;
+
+			if(variables.ContainsKey("NUMBER3")){
+				fullNumber += int.Parse(variables["NUMBER3"]);
+			}
+		}else{
+			return number + "";
+		}
+
+		return fullNumber + "";
+	}
+
+
+
+
+
+
+
+
+//two hundred forty four million two hundred twenty two thousand three hundred thirty three
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+COMMON_NUMBER_1_9_ALL:
+	evaluator{
+		(
+			(("One" | "First") . $NUMBER=1$) |
+			(("Two" | "Second) . $NUMBER=2$) |
+			(("Three" | "Third) . $NUMBER=3$) |
+			(("Four" | "Fourth") . $NUMBER=4$) |
+			(("Five" | "Fifth") . $NUMBER=5$) |
+			(("Six" | "Sixth") . $NUMBER=6$) |
+			(("Seven" | "Seventh") . $NUMBER=7$) |
+			(("Eight" | "Eighth") . $NUMBER=8$) |
+			(("Nine" | "Ninth") . $NUMBER=9$)
+		)
+	}
+	analyzer{
+		return variables["NUMBER"];
+	}
+	
+COMMON_NUMBER_10_19_ALL:
+	evaluator{
+		(
+			(("Ten" | "Tenth") . $NUMBER=10$) |
+			(("Eleven" | "Eleventh") . $NUMBER=11$) |
+			(("Twelve" | "Twelfth") . $NUMBER=12$) |
+			(("Thirteen" | "Thirteenth") . $NUMBER=13$) |
+			(("Fourteen" | "Fourteenth") . $NUMBER=14$) |
+			(("Fifteen" | "Fifteenth") . $NUMBER=15$) |
+			(("Sixteen" | "Sixteenth") . $NUMBER=16$) |
+			(("Seventeen" | "Seventeenth") . $NUMBER=17$) |
+			(("Eighteen" | "Eighteenth") . $NUMBER=18$) |
+			(("Nineteen" | "Nineteenth") . $NUMBER=19$)
+		)
+	}
+	analyzer{
+		return variables["NUMBER"];
+	}
+	
+COMMON_NUMBER_20_90_ALL:
+	evaluator{
+		(
+			(("Twenty" | "Twentieth") . $NUMBER=20$) |
+			(("Thirty" | "Thirtieth") . $NUMBER=30$) |
+			(("Forty" | "Fortieth") . $NUMBER=40$) |
+			(("Fifty" | "Fiftieth") . $NUMBER=50$) |
+			(("Sixty" | "Sixtieth") . $NUMBER=60$) |
+			(("Seventy" | "Seventieth") . $NUMBER=70$) |
+			(("Eighty" | "Eightieth") . $NUMBER=80$) |
+			(("Ninety" | "Ninetieth") . $NUMBER=90$)
+		)
+		.
+		[$NUMBER2=COMMON_NUMBER_1_9_ALL()$]
+	}
+	analyzer{
+		if(variables.ContainsKey("NUMBER2")){
+			return (int.Parse(variables["NUMBER"]) + int.Parse(variables["NUMBER2"])) + "";
+		}
+		return variables["NUMBER"];
+	}
+	
+	
+COMMON_NUMBER_1_99_ALL:
+	evaluator{
+		(
+			($NUMBER=COMMON_NUMBER_1_9_ALL()$) |
+			($NUMBER=COMMON_NUMBER_10_19_ALL()$) |
+			($NUMBER=COMMON_NUMBER_20_90_ALL()$)
+		)
+	}
+	analyzer{
+		return variables["NUMBER"];
+	}
+	
+COMMON_NUMBER_1_999_ALL:
+	evaluator{
+		(
+			($NUMBER=COMMON_NUMBER_1_99_ALL()$)
+			|
+			(
+				[$NUMBER1=COMMON_NUMBER_1_9_ALL()$]
+				.
+				("hundred" | "hundredth")
+				.
+				[$NUMBER2=COMMON_NUMBER_1_99_ALL()$]
+			)
+		)
+	}
+	analyzer{
+		if(variables.ContainsKey("NUMBER")){
+			return variables["NUMBER"];
+		}
+		
+		var number = 100;
+		if(variables.ContainsKey("NUMBER1")){
+			number = int.Parse(variables["NUMBER1"]) * 100;
+		}
+		if(variables.ContainsKey("NUMBER2")){
+			number += int.Parse(variables["NUMBER2"]);
+		}
+
+		return number + "";
+	}
+
+COMMON_NUMBER_ALL:
+	evaluator{
+		[$NUMBER=COMMON_NUMBER_1_999_ALL()$]
+		.
+		(
+			[
+				("million" | "millionth")
+				.
+				$MILLION=1$
+				.
+				[
+					[$NUMBER2=COMMON_NUMBER_1_999_ALL()$]
+					.
+					[
+						("thousand" | "thousandth")
+						.
+						$THOUSAND=1$
+						.
+						[
+							$NUMBER3=COMMON_NUMBER_1_999_ALL()$
+						]
+					]
+				]
+			] | [
+				("thousand" | "thousandth")
+				.
+				$THOUSAND=1$
+				.
+				[
+					$NUMBER3=COMMON_NUMBER_1_999_ALL()$
+				]
+			]
+		)
+	}
+	analyzer{
+		var fullNumber = 0;
+		var number = 1;
+		if(variables.ContainsKey("NUMBER")){
+			number = int.Parse(variables["NUMBER"]);
+		}
+
+		if(variables.ContainsKey("MILLION")){
+			fullNumber += number * 1_000_000;
+
+			var number2 = 1;
+			
+			if(variables.ContainsKey("NUMBER2")){
+				number2 = int.Parse(variables["NUMBER2"]);
+			}
+
+			if(variables.ContainsKey("THOUSAND")){
+				fullNumber += number2 * 1_000;
+
+				if(variables.ContainsKey("NUMBER3")){
+					fullNumber += int.Parse(variables["NUMBER3"]);
+				}
+			}
+		}
+		else if(variables.ContainsKey("THOUSAND")){
+			fullNumber = number * 1_000;
+
+			if(variables.ContainsKey("NUMBER3")){
+				fullNumber += int.Parse(variables["NUMBER3"]);
+			}
+		}else{
+			return number + "";
+		}
+
+		return fullNumber + "";
+	}
+
+

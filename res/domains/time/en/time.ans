@@ -1,0 +1,19 @@
+BASIC_TIME:
+    evaluator{
+        "It is" . $TIME$ . "o'clock" . $MINUTES$ . "minutes" . ["in" . $REGION$]
+    }
+
+MAKE_APPOINTMENT_ASK_TIME:
+    evaluator{
+        "At what point in time?"
+    }
+
+MAKE_APPOINTMENT_ASK_NAME:
+    evaluator{
+        "What shall I name it?"
+    }
+
+MADE_APPOINTMENT:
+    evaluator{
+        "Created an appointment"
+    }
