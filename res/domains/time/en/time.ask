@@ -20,7 +20,7 @@ MAKE_APPOINTMENT:
 
 TEST:
     evaluator{
-        $NUMBER=COMMON_NUMBER_ALL()$
+        $NUMBER=TIME()$
     }
     analyzer{
         return variables["NUMBER"];

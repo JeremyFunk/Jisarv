@@ -183,7 +183,7 @@ namespace Jisarv.SpeechEngine.Generator.Domains {
                         copiedRet.Finished = result.Finished;
                         copiedRet.NodeCount += result.NodeCount;
                         var varResult = func.Analyzer(result.Variables);
-                        copiedRet.Variables.Add(node.Value[0], varResult);
+                         copiedRet.Variables.Add(node.Value[0], varResult);
 
                         if (result.Finished)
                         {
@@ -373,13 +373,18 @@ namespace Jisarv.SpeechEngine.Generator.Domains {
 
         private static DomainFunction[] ParseFunctions(string[] text, DomainFunctionType type, bool isCommon = false)
         {
+            int Convert(string s, bool a)
+            {
+                return 0;
+            }
+
             List<DomainFunction> functions = new List<DomainFunction>();
 
             string openFunction = "";
             int paranthesisCount = 0;
             int mode = 0; // 1 = Interpreter, 2 = Analyzer
             //Type functionReturnType = typeof System.Double;
-            string currentInterpreterText = "";
+            string currentEvaluatorText = "";
             string currentAnalyzerText = "";
             foreach (string line in text)
             {
@@ -409,8 +414,9 @@ namespace Jisarv.SpeechEngine.Generator.Domains {
                         if(currentAnalyzerText != "")
                         {
                             currentAnalyzerText = "public static string Analyze(Dictionary<string, string> variables){\n" + currentAnalyzerText + "\n}";
-                            Console.WriteLine(currentAnalyzerText);
-                            Node currentNode = ParseInterpreter(currentInterpreterText.Trim());
+                            //Console.WriteLine(currentAnalyzerText);
+                            Logger.Log("Loading Function: " + openFunction, LogLevel.Log);
+                            Node currentNode = ParseEvaluator(currentEvaluatorText.Trim());
                             var result = CSharpScript.Create<string>(currentAnalyzerText, ScriptOptions.Default.WithImports("System", "System.Collections.Generic")).ContinueWith<Func<Dictionary<string, string>, string>>("Analyze").CreateDelegate().Invoke().GetAwaiter().GetResult();
                             
                             functions.Add(new DomainFunction { Name = openFunction, Nodes = currentNode, Type = type, Analyzer = result });
@@ -419,14 +425,14 @@ namespace Jisarv.SpeechEngine.Generator.Domains {
                         }
                         else
                         {
-                            Node currentNode = ParseInterpreter(currentInterpreterText.Trim());
+                            Node currentNode = ParseEvaluator(currentEvaluatorText.Trim());
                             functions.Add(new DomainFunction { Name = openFunction, Nodes = currentNode, Type = type });
                             if (isCommon)
                                 common = functions.ToArray();
                         }
                     }
                     openFunction = line.Replace(":", "");
-                    currentInterpreterText = "";
+                    currentEvaluatorText = "";
                     currentAnalyzerText = "";
                 }
                 else if (line.Contains("evaluator{"))
@@ -439,7 +445,7 @@ namespace Jisarv.SpeechEngine.Generator.Domains {
                 }
                 else if(mode == 1)
                 {
-                    currentInterpreterText += line.Trim();
+                    currentEvaluatorText += line.Trim();
                 }
                 else if(mode == 2)
                 {
@@ -452,8 +458,9 @@ namespace Jisarv.SpeechEngine.Generator.Domains {
             {
                 currentAnalyzerText = "public static string Analyze(Dictionary<string, string> variables){\n" + currentAnalyzerText + "\n}";
 
-                Console.WriteLine(currentAnalyzerText);
-                var nodes = ParseInterpreter(currentInterpreterText.Trim());
+                //Console.WriteLine(currentAnalyzerText);
+                Logger.Log("Loading Function: " + openFunction, LogLevel.Log);
+                var nodes = ParseEvaluator(currentEvaluatorText.Trim());
 
                 var results = CSharpScript.Create<string>(currentAnalyzerText, ScriptOptions.Default.WithImports("System", "System.Collections.Generic")).ContinueWith<Func<Dictionary<string, string>, string>>("Analyze").CreateDelegate().Invoke().GetAwaiter().GetResult();
 
@@ -461,7 +468,7 @@ namespace Jisarv.SpeechEngine.Generator.Domains {
             }
             else
             {
-                var nodes = ParseInterpreter(currentInterpreterText.Trim());
+                var nodes = ParseEvaluator(currentEvaluatorText.Trim());
                 functions.Add(new DomainFunction { Name = openFunction, Nodes = nodes });
             }
             if (isCommon)
@@ -518,8 +525,49 @@ namespace Jisarv.SpeechEngine.Generator.Domains {
             return list.ToArray();
         }
 
-        private static Node ParseInterpreter(string text)
+        private static Node ParseEvaluator(string text)
         {
+            int p1 = 0, p2 = 0, p3 = 0;
+            foreach(char c in text)
+            {
+                switch (c)
+                {
+                    case '(':
+                        p1++;
+                        break;
+                    case ')':
+                        p1--;
+                        break;
+
+                    case '[':
+                        p2++;
+                        break;
+                    case ']':
+                        p2--;
+                        break;
+
+                    case '{':
+                        p3++;
+                        break;
+                    case '}':
+                        p3--;
+                        break;
+                }
+            }
+
+            if(p1 != 0)
+            {
+                Logger.Log("Evaluator could not be interpreted. ( = " + p1, LogLevel.Error);
+            }
+            if (p2 != 0)
+            {
+                Logger.Log("Evaluator could not be interpreted. [ = " + p2, LogLevel.Error);
+            }
+            if (p3 != 0)
+            {
+                Logger.Log("Evaluator could not be interpreted. { = " + p3, LogLevel.Error);
+            }
+
             Node currentNode = new Node();
             int index = 0;
 
@@ -530,7 +578,7 @@ namespace Jisarv.SpeechEngine.Generator.Domains {
 
                 foreach (var curOr in or)
                 {
-                    var orNode = ParseInterpreter(curOr.Trim());
+                    var orNode = ParseEvaluator(curOr.Trim());
                     options.Add(orNode);
                 }
 
@@ -546,7 +594,7 @@ namespace Jisarv.SpeechEngine.Generator.Domains {
 
                     foreach (var curAnd in and)
                     {
-                        var node = ParseInterpreter(curAnd.Trim());
+                        var node = ParseEvaluator(curAnd.Trim());
                         if(anchorNode == null)
                         {
                             currentNode = node;
@@ -656,7 +704,7 @@ namespace Jisarv.SpeechEngine.Generator.Domains {
                             index++;
                         }
 
-                        currentNode = ParseInterpreter(text.Substring(1, index - 1).Trim());
+                        currentNode = ParseEvaluator(text.Substring(1, index - 1).Trim());
                     }
                     else if (text.TrimStart().StartsWith("["))
                     {
@@ -679,7 +727,7 @@ namespace Jisarv.SpeechEngine.Generator.Domains {
                             index++;
                         }
 
-                        Node temp = ParseInterpreter(text.Substring(1, index - 1).Trim());
+                        Node temp = ParseEvaluator(text.Substring(1, index - 1).Trim());
                         currentNode.OptionalPath = temp;
                         currentNode.Optional = true;
                     }

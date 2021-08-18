@@ -10,67 +10,6 @@ CREATE_QUESTION_PREFIX:
 
 
 
-DATE:
-	evaluator{
-		$DATE=COMMON_NUMBER_1_99_ALL()$
-		.
-		[
-			("January" . $MONTH=1$) |
-			("February" . $MONTH=2$) |
-			("March" . $MONTH=3$) |
-			("April" . $MONTH=4$) |
-			("May" . $MONTH=5$) |
-			("June" . $MONTH=6$) |
-			("July" . $MONTH=7$) |
-			("August" . $MONTH=8$) |
-			("September" . $MONTH=9$) |
-			("October" . $MONTH=10$) |
-			("November" . $MONTH=11$) |
-			("December" . $MONTH=12$) |
-		]
-		.
-		[
-			$YEAR=COMMON_NUMBER_ALL()$
-		]
-	}
-	analyzer{
-		$DATE=COMMON_NUMBER_1_99_ALL()$
-		.
-		[
-			(
-				"PM" . $PM=1$
-			)
-			|
-			(
-				"AM" . $AM=1$
-			)
-		]
-	}
-
-TIME:
-	evaluator{
-		
-	}
-	
-
-POINT_IN_TIME:
-	evaluator{
-		[$DATE = DATE()$]
-		.
-
-	}
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -329,6 +268,7 @@ COMMON_NUMBER_20_90_COUNT:
 			("Seventieth" . $NUMBER=70$) | 
 			("Eightieth" . $NUMBER=80$) | 
 			("Ninetieth" . $NUMBER=90$)
+		)
 	}
 	analyzer{
 		if(variables.ContainsKey("NUMBER2")){
@@ -713,3 +653,316 @@ COMMON_NUMBER_ALL:
 	}
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+TIME:
+	evaluator{
+		(
+			($NUMBER=COMMON_NUMBER_1_99_ALL()$ | ("quarter". $NUMBER=15$) | ("half" . $NUMBER=30$))
+			.
+			(
+				(
+					(
+						(
+							"PM".$PM=1$
+						)
+						|
+						(
+							"AM".$AM=1$
+						)
+						|
+						(
+							("o'clock" | "o clock").$CLOCK=1$
+						)
+					)
+					.
+					[
+						$MINUTES=COMMON_NUMBER_1_99_ALL()$
+						.
+						["minute" | "minutes"]
+					]
+					.
+					[
+						$SECONDS=COMMON_NUMBER_1_99_ALL()$
+						.
+						["seconds" | "second"]
+					]
+				)
+				|
+				(
+					[
+						(
+							("minutes" | "minute")
+							.
+							[
+								$SECONDS_NUMBER=COMMON_NUMBER_1_99_ALL()$
+								.
+								["seconds" | "second"]
+								.
+								$SECONDS=1$
+							]
+						) | (
+							"seconds".$SECONDS=1$
+						)
+					]
+					.
+					(
+						(("past" | "after").$PAST=1$)
+						|
+						(("to" | "before").$TO=1$)
+					)
+					.
+					$HOUR=COMMON_NUMBER_1_99_ALL()$
+					.
+					[
+						(
+							"PM".$PM=1$
+						)
+						|
+						(
+							"AM".$AM=1$
+						)
+						|
+						(
+							("o'clock" | "o clock").$CLOCK=1$
+						)
+					]
+				)
+				|
+				(
+					["oh"]
+					.
+					$NUMBER2=COMMON_NUMBER_1_99_ALL()$
+					.
+					$TIMETABLE=1$
+					.
+					(
+						(
+							"PM".$PM=1$
+						)
+						|
+						(
+							"AM".$AM=1$
+						)
+						|
+						(
+							["o'clock" | "o clock"].$CLOCK=1$
+						)
+					)
+				)
+			)
+		)
+	}
+	analyzer{
+
+		int Convert(int hour, bool pm){
+			if(pm){
+				if(hour == 12){
+					return 12;
+				}
+
+				return hour + 12;
+			}else{
+				if(hour == 12){
+					return 0;
+				}
+
+				return hour;
+			}
+		}
+
+		bool Cap(int min, int max, int time){
+			if(time < min || time > max){
+				return false;
+			}
+
+			return true;
+		}
+
+		var number = int.Parse(variables["NUMBER"]);
+
+		if(variables.ContainsKey("PAST") || variables.ContainsKey("TO")){
+			
+			var fullHour = int.Parse(variables["HOUR"]);
+
+			if(variables.ContainsKey("PM")){
+				fullHour = Convert(number, true);
+			}else if(variables.ContainsKey("AM")){
+				fullHour = Convert(number, false);
+			}
+
+			var seconds = 0;
+			var minutes = int.Parse(variables["NUMBER"]);
+
+			if(variables.ContainsKey("SECONDS_NUMBER")){
+				seconds = int.Parse(variables["SECONDS_NUMBER"]);
+			}else if(variables.ContainsKey("SECONDS")){
+				seconds = minutes;
+				minutes = 0;
+			}
+
+			if(variables.ContainsKey("TO")){
+				fullHour--;
+				if(fullHour == -1){
+					fullHour = 23;
+				}
+
+				seconds = 60 - seconds;
+				minutes = 60 - minutes;
+
+				if(seconds == 60){
+					seconds = 0;
+				}else{
+					minutes--;
+				}
+			}
+
+			return fullHour + ":" + minutes + ":" + seconds;
+
+		}else if(variables.ContainsKey("TIMETABLE")){
+			var number2 = int.Parse(variables["NUMBER2"]);
+
+			if(!Cap(0, 60, number2)){
+				return null;
+			}
+
+			var fullHour = number;
+
+			if(variables.ContainsKey("PM")){
+				fullHour = Convert(number, true);
+			}else if(variables.ContainsKey("AM")){
+				fullHour = Convert(number, false);
+			}
+
+			return fullHour + ":" + number2 + ":00";
+		}else{
+			var fullHour = number;
+
+			if(variables.ContainsKey("PM")){
+				fullHour = Convert(number, true);
+			}else if(variables.ContainsKey("AM")){
+				fullHour = Convert(number, false);
+			}
+
+			var minutes = 0;
+			var seconds = 0;
+
+			if(variables.ContainsKey("MINUTES")){
+				minutes = int.Parse(variables["MINUTES"]);
+			}
+			if(variables.ContainsKey("SECONDS")){
+				seconds = int.Parse(variables["SECONDS"]);
+			}
+
+			return fullHour + ":" + minutes + ":" + seconds;
+		}
+		return null;
+	}
+
+
+
+
+
+	
+
+
+DATE:
+	evaluator{
+		$DATE=COMMON_NUMBER_1_99_ALL()$
+		.
+		[
+			("January" . $MONTH=1$) |
+			("February" . $MONTH=2$) |
+			("March" . $MONTH=3$) |
+			("April" . $MONTH=4$) |
+			("May" . $MONTH=5$) |
+			("June" . $MONTH=6$) |
+			("July" . $MONTH=7$) |
+			("August" . $MONTH=8$) |
+			("September" . $MONTH=9$) |
+			("October" . $MONTH=10$) |
+			("November" . $MONTH=11$) |
+			("December" . $MONTH=12$) |
+		]
+		.
+		[
+			$YEAR=COMMON_NUMBER_ALL()$
+		]
+	}
+	analyzer{
+		var date = variables["DATE"];
+		var month = 0;
+		var year = 0;
+
+		if(variables.ContainsKey("MONTH")){
+			month = int.Parse(variables["MONTH"]);
+		}else{
+			month = DateTime.Now.Month;
+		}
+
+		if(variables.ContainsKey("YEAR")){
+			year = int.Parse(variables["YEAR"]);
+		}else{
+			year = DateTime.Now.Year;
+		}
+		//Past and future required to judge
+
+
+	}
+
+	
+
+POINT_IN_TIME:
+	evaluator{
+		["at" | "on the" | "on"]
+		.
+		[$DATE = DATE()$]
+		.
+		["at" | "on the" | "on"]
+		.
+		[TIME = TIME()$]
+	}
+	analyzer{
+		return null;
+	}
