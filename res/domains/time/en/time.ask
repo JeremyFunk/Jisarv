@@ -20,7 +20,7 @@ MAKE_APPOINTMENT:
 
 TEST:
     evaluator{
-        $NUMBER=TIME()$
+        $NUMBER=DATE(true,8)$
     }
     analyzer{
         return variables["NUMBER"];

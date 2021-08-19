@@ -416,10 +416,20 @@ namespace Jisarv.SpeechEngine.Generator.Domains {
                             currentAnalyzerText = "public static string Analyze(Dictionary<string, string> variables){\n" + currentAnalyzerText + "\n}";
                             //Console.WriteLine(currentAnalyzerText);
                             Logger.Log("Loading Function: " + openFunction, LogLevel.Log);
+
+                            var variables = new string[] { };
+
+                            if (openFunction.Contains("(") && !openFunction.EndsWith("():"))
+                            {
+                                var temp = openFunction.Split("(")[1];
+                                temp = temp.Substring(0, temp.Length - 1);
+                                variables = temp.Split(",");
+                            }
+
                             Node currentNode = ParseEvaluator(currentEvaluatorText.Trim());
                             var result = CSharpScript.Create<string>(currentAnalyzerText, ScriptOptions.Default.WithImports("System", "System.Collections.Generic")).ContinueWith<Func<Dictionary<string, string>, string>>("Analyze").CreateDelegate().Invoke().GetAwaiter().GetResult();
                             
-                            functions.Add(new DomainFunction { Name = openFunction, Nodes = currentNode, Type = type, Analyzer = result });
+                            functions.Add(new DomainFunction { Name = openFunction, Nodes = currentNode, Type = type, Analyzer = result, Variables = variables });
                             if (isCommon)
                                 common = functions.ToArray();
                         }

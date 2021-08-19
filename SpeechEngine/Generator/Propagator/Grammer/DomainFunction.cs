@@ -27,5 +27,6 @@ namespace Jisarv.SpeechEngine.Generator.Propagator.Grammer
         public bool Locked;
         public Func<Dictionary<string, string>, InternalCallReturn> InternalCall;
         public Func<Dictionary<string, string>, string> Analyzer;
+        public string[] Variables;
     }
 }

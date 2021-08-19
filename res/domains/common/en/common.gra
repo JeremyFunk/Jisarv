@@ -907,7 +907,7 @@ TIME:
 	
 
 
-DATE:
+DATE(PAST, TEST):
 	evaluator{
 		$DATE=COMMON_NUMBER_1_99_ALL()$
 		.
@@ -931,7 +931,7 @@ DATE:
 		]
 	}
 	analyzer{
-		var date = variables["DATE"];
+		/*var date = variables["DATE"];
 		var month = 0;
 		var year = 0;
 
@@ -945,9 +945,11 @@ DATE:
 			year = int.Parse(variables["YEAR"]);
 		}else{
 			year = DateTime.Now.Year;
-		}
+		}*/
 		//Past and future required to judge
 
+		Console.WriteLine(variables["Pass"]);
+		return "Hi";
 
 	}
 
